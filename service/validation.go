@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+
+	"github.com/mesg-foundation/core/ipfs"
+	"github.com/sirupsen/logrus"
 )
 
 // ParameterWarning contains a specific warning related to a parameter.
@@ -89,6 +92,16 @@ func (v *parameterValidator) validateType(value interface{}) []*ParameterWarning
 			return []*ParameterWarning{v.newParameterWarning("not an object")}
 		}
 		return validateParametersSchema(v.parameter.Object, data)
+	case "File":
+		strValue, ok := value.(string)
+		if !ok {
+			return []*ParameterWarning{v.newParameterWarning("not a file")}
+		}
+		exists, err := ipfs.New().Exists(strValue)
+		logrus.WithField("Exists", exists).WithField("hash", strValue).WithField("err", err).Debug("IPFS Exists ?")
+		if err != nil || !exists {
+			return []*ParameterWarning{v.newParameterWarning("file doesn't exists")}
+		}
 	case "Any":
 		return nil
 	default:

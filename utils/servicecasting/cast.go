@@ -52,6 +52,7 @@ var casters = map[string]caster{
 	"Number":  castNumber,
 	"Boolean": castBoolean,
 	"Object":  castObject,
+	"File":    castString,
 	"Any":     castAny,
 }
 

@@ -105,7 +105,7 @@ type Parameter struct {
 	Description string `yaml:"description" json:"description,omitempty" validate:"printascii"`
 
 	// Type is the data type of parameter.
-	Type string `yaml:"type" json:"type,omitempty" validate:"required,printascii,oneof=String Number Boolean Object Any"`
+	Type string `yaml:"type" json:"type,omitempty" validate:"required,printascii,oneof=String Number Boolean Object Any File"`
 
 	// Optional indicates if parameter is optional.
 	Optional bool `yaml:"optional" json:"optional,omitempty"`

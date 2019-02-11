@@ -35,6 +35,7 @@ require (
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20180920040306-f579f869bbfe
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/ipfs/go-ipfs v0.4.18
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kelseyhightower/envconfig v1.3.0
 	github.com/kevinburke/ssh_config v0.0.0-20180711164746-82cf3f926438 // indirect

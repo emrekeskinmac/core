@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"io"
+	"path/filepath"
 
 	"github.com/mesg-foundation/core/config"
 	"github.com/mesg-foundation/core/container"
@@ -37,7 +38,10 @@ func (d *ContainerDaemon) Start() error {
 	if err != nil {
 		return err
 	}
-	_, err = d.c.StartService(d.buildServiceOptions(sharedNetworkID))
+	if _, err := d.c.StartService(d.buildServiceOptions(sharedNetworkID)); err != nil {
+		return err
+	}
+	_, err = d.c.StartService(d.buildServiceOptionsIPFS(sharedNetworkID))
 	return err
 }
 
@@ -78,6 +82,29 @@ func (d *ContainerDaemon) buildServiceOptions(sharedNetworkID string) container.
 			{
 				Target:    uint32(port),
 				Published: uint32(port),
+			},
+		},
+		Networks: []container.Network{
+			{ID: sharedNetworkID},
+		},
+	}
+}
+
+func (d *ContainerDaemon) buildServiceOptionsIPFS(sharedNetworkID string) container.ServiceOptions {
+	return container.ServiceOptions{
+		Namespace: []string{"ipfs"},
+		Image:     "ipfs/go-ipfs:v0.4.18",
+		Mounts: []container.Mount{
+			{
+				Source: filepath.Join(d.cfg.Core.Path, "ipfs"),
+				Target: "/data/ipfs",
+				Bind:   true,
+			},
+		},
+		Ports: []container.Port{
+			{
+				Target:    uint32(5001),
+				Published: uint32(5001),
 			},
 		},
 		Networks: []container.Network{
