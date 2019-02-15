@@ -1,7 +1,6 @@
 package service
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -13,9 +12,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/tarsum"
 	"github.com/mesg-foundation/core/container"
 	"github.com/mesg-foundation/core/service/importer"
 	"github.com/mesg-foundation/core/x/xos"
+	"golang.org/x/crypto/sha3"
 )
 
 // WARNING about hash tags on Service type and its inner types:
@@ -90,6 +91,8 @@ type DeployStatus struct {
 	Type    DStatusType
 }
 
+var defaultTHash = tarsum.NewTHash("sha3", sha3.New512)
+
 // New creates a new service from a gzipped tarball.
 func New(tarball io.Reader, env map[string]string, options ...Option) (*Service, error) {
 	s := &Service{}
@@ -109,20 +112,6 @@ func New(tarball io.Reader, env map[string]string, options ...Option) (*Service,
 		return nil, err
 	}
 
-	// XXX: remove .git folder from repo.
-	// It makes docker build iamge id same between repo clones.
-	if err := os.RemoveAll(filepath.Join(s.tempPath, ".git")); err != nil {
-		return nil, err
-	}
-
-	// XXX: change the access and modification times of service to get constant hash
-	zerot := time.Time{}
-	if err := filepath.Walk(s.tempPath, func(path string, _ os.FileInfo, _ error) error {
-		return os.Chtimes(path, zerot, zerot)
-	}); err != nil {
-		return nil, err
-	}
-
 	// tar it back without any compression to get constant hash
 	// despite used compression from tarball
 	t, err := archive.Tar(s.tempPath, archive.Gzip)
@@ -130,11 +119,10 @@ func New(tarball io.Reader, env map[string]string, options ...Option) (*Service,
 		return nil, err
 	}
 
-	hash, err := s.computeHash(t, env)
+	s.Hash, err = s.computeHash(t, env)
 	if err != nil {
 		return nil, err
 	}
-	s.Hash = hash
 
 	s.injectDefinition(def)
 
@@ -305,14 +293,12 @@ func (s *Service) configuration() *Dependency {
 
 // Compute hash computesh sha256 hash of r reader and env slice map.
 func (s *Service) computeHash(r io.Reader, env map[string]string) (string, error) {
-	h := sha256.New()
-	if _, err := io.Copy(h, r); err != nil {
+	ts, err := tarsum.NewTarSumHash(r, true, tarsum.Version1, defaultTHash)
+	if err != nil {
 		return "", err
 	}
-	if _, err := h.Write([]byte(xos.EnvMapToString(env))); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	envbytes := []byte(xos.EnvMapToString(env))
+	return hex.EncodeToString(ts.Hash().Hash().Sum(envbytes)), nil
 }
 
 // ErrNotDefinedEnv error returned when optionally given env variables
